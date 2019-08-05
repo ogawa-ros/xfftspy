@@ -31,6 +31,7 @@ class udp_client(object):
         self.port = port
         self.print = print
         self.bufsize = bufsize
+        self.open()
         pass
 
     # Base func
