@@ -9,7 +9,7 @@
     >>> import xfftspy
 
     # initialize XFFTS boards
-    >>> cmd = xffts.udp_client(host='localhost')
+    >>> cmd = xfftspy.udp_client(host='localhost')
     >>> cmd.stop()
     >>> cmd.set_synctime(100000)          # synctime : 100 ms
     >>> cmd.set_usedsections([1])         # use board : 1
@@ -19,7 +19,7 @@
     >>> cmd.start()                       # start measurement
     
     # receive spectra
-    >>> rcv = xffts.data_consumer(host='localhost')
+    >>> rcv = xfftspy.data_consumer(host='localhost')
     >>> rcv.clear_buffer()
     >>> rcv.receive_once()
     
