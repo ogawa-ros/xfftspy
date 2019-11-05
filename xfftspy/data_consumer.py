@@ -55,7 +55,7 @@ class data_consumer(object):
             spec = struct.unpack('{}f'.format(ch_num),
                                  rawdata[counter+8:counter+8+ch_num*4])
             data[BE_num] = spec
-            counter += counter + 8 + ch_num * 4
+            counter += 8 + ch_num * 4
             continue
 
         return data
