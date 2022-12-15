@@ -14,7 +14,7 @@ jobs:
       matrix:
         python-version: [3.7, 3.8, 3.9, "3.10"]
     env:
-      PACKAGE_NAME: ogameasure
+      PACKAGE_NAME: xfftspy
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v3
