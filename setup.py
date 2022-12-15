@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name = 'xfftspy',
-    version = __import__('xfftspy').__version__,
+    version = "0.1.3",
     description = '',
     url = 'https://github.com/ogawa-ros/xfftspy',
     author = 'Nishimura, Atsushi',
