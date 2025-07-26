@@ -46,17 +46,27 @@ class data_consumer(object):
 
     def _receive_data(self, header):
         rawdata = recv(self.sock, header['data_size'])
-        
+
+        def process_chunk(start_index):
+            BE_num = struct.unpack('I', rawdata[start_index:start_index+4])[0]
+            ch_num = struct.unpack('I', rawdata[start_index+4:start_index+8])[0]
+            spec = struct.unpack('{}f'.format(ch_num), rawdata[start_index+8:start_ind\
+ex+8+ch_num*4])
+            return BE_num, spec
+
         counter = 0
-        data = {}
-        for i in range(header['BE_num']):
-            BE_num = struct.unpack('I', rawdata[counter:counter+4])[0]
+        indices = []
+        for _ in range(header['BE_num']):
+            indices.append(counter)
             ch_num = struct.unpack('I', rawdata[counter+4:counter+8])[0]
-            spec = struct.unpack('{}f'.format(ch_num),
-                                 rawdata[counter+8:counter+8+ch_num*4])
-            data[BE_num] = spec
             counter += 8 + ch_num * 4
-            continue
+
+        data = {}
+        with ThreadPoolExecutor() as executor:
+            results = executor.map(process_chunk, indices)
+
+        for BE_num, spec in results:
+            data[BE_num] = spec
 
         return data
 
