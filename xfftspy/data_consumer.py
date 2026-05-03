@@ -2,7 +2,10 @@ import socket
 import struct
 import time
 
-import numpy as np
+try:
+    import numpy as np
+except Exception:  # pragma: no cover - keeps legacy tuple mode usable without numpy.
+    np = None
 
 from .util import recv
 
@@ -10,7 +13,10 @@ from .util import recv
 class data_consumer(object):
     header_size = 64
 
-    def __init__(self, host='localhost', port=25144):
+    def __init__(self, host='localhost', port=25144, return_numpy=False):
+        self.return_numpy = bool(return_numpy)
+        if self.return_numpy and np is None:
+            raise RuntimeError("return_numpy=True requires numpy")
         self.connect(host, port)
         pass
 
@@ -30,34 +36,40 @@ class data_consumer(object):
     def _receive_header(self):
         h = recv(self.sock, self.header_size)
         now = time.time()
-        mv = memoryview(h)
 
         header = {}
-        header['ieee'] = struct.unpack_from('4s', mv, 0)[0]
-        header['data_format'] = struct.unpack_from('4s', mv, 4)[0]
-        header['package_length'] = struct.unpack_from('I', mv, 8)[0]
-        header['BE_name'] = struct.unpack_from('8s', mv, 12)[0]
-        header['timestamp'] = struct.unpack_from('28s', mv, 20)[0]
-        header['integration_time'] = struct.unpack_from('I', mv, 48)[0]
-        header['phase_number'] = struct.unpack_from('I', mv, 52)[0]
-        header['BE_num'] = struct.unpack_from('I', mv, 56)[0]
-        header['blocking'] = struct.unpack_from('I', mv, 60)[0]
+        header['ieee'] = struct.unpack('4s', h[0:4])[0]
+        header['data_format'] = struct.unpack('4s', h[4:8])[0]
+        header['package_length'] = struct.unpack('I', h[8:12])[0]
+        header['BE_name'] = struct.unpack('8s', h[12:20])[0]
+        header['timestamp'] = struct.unpack('28s', h[20:48])[0]
+        header['integration_time'] = struct.unpack('I', h[48:52])[0]
+        header['phase_number'] = struct.unpack('I', h[52:56])[0]
+        header['BE_num'] = struct.unpack('I', h[56:60])[0]
+        header['blocking'] = struct.unpack('I', h[60:64])[0]
         header['data_size'] = header['package_length'] - self.header_size
         header['received_time'] = now
         return header
 
     def _receive_data(self, header):
         rawdata = recv(self.sock, header['data_size'])
-        mv = memoryview(rawdata)
 
         counter = 0
         data = {}
         for i in range(header['BE_num']):
-            BE_num = struct.unpack_from('I', mv, counter)[0]
-            ch_num = struct.unpack_from('I', mv, counter + 4)[0]
-            spec = np.frombuffer(mv, dtype=np.float32, count=ch_num, offset=counter + 8)
+            BE_num = struct.unpack('I', rawdata[counter:counter+4])[0]
+            ch_num = struct.unpack('I', rawdata[counter+4:counter+8])[0]
+            start = counter + 8
+            stop = start + ch_num * 4
+            if self.return_numpy:
+                # Keep the XFFTS payload as a NumPy view over the received bytes.
+                # This avoids creating 32768 Python float objects per board.
+                spec = np.frombuffer(rawdata, dtype='<f4', count=ch_num, offset=start)
+            else:
+                # Backward-compatible public xfftspy behavior.
+                spec = struct.unpack('{}f'.format(ch_num), rawdata[start:stop])
             data[BE_num] = spec
-            counter += 8 + ch_num * 4
+            counter = stop
             continue
 
         return data
