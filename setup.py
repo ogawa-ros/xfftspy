@@ -5,7 +5,7 @@ long_description = (Path(__file__).parent / "README.md").read_text()
 
 setuptools.setup(
     name = 'xfftspy',
-    version = "0.2.0",
+    version = "0.1.4",
     description = '',
     long_description = long_description,
     long_description_content_type = "text/markdown",
